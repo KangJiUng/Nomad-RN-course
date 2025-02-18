@@ -4,9 +4,6 @@ import {
   Text,
   View,
   TouchableOpacity,
-  TouchableHighlight,
-  TouchableWithoutFeedback,
-  Pressable,
   TextInput,
   ScrollView,
   Alert,
@@ -14,23 +11,50 @@ import {
 import { theme } from "./colors";
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Fontisto } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/Ionicons"; // @expo/vector-icons 사용 불가 -> Ionicons 사용으로 변경
 
 const STORAGE_KEY = "@toDos";
+const WORKING_KEY = "@working"; // 새로고침 후 불러올 버튼 상태 저장 키
 
 export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
   const [toDos, setToDos] = useState({});
+
   useEffect(() => {
     loadToDos();
+    loadWorkingState(); // 버튼 상태 복원
   }, []);
-  const travel = () => setWorking(false);
-  const work = () => setWorking(true);
+
+  // 선택한 버튼 상태를 AsyncStorage에 저장
+  const saveWorkingState = async (state) => {
+    await AsyncStorage.setItem(WORKING_KEY, JSON.stringify(state));
+  };
+
+  // AsyncStorage에서 버튼 상태 불러오기
+  const loadWorkingState = async () => {
+    const savedState = await AsyncStorage.getItem(WORKING_KEY);
+    if (savedState !== null) {
+      setWorking(JSON.parse(savedState)); // boolean 값 복원
+    }
+  };
+
+  const travel = () => {
+    setWorking(false);
+    saveWorkingState(false);
+  };
+
+  const work = () => {
+    setWorking(true);
+    saveWorkingState(true);
+  };
+
   const onChangeText = (payload) => setText(payload);
+
   const saveToDos = async (toSave) => {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
   };
+
   const loadToDos = async () => {
     const s = await AsyncStorage.getItem(STORAGE_KEY);
     setToDos(s ? JSON.parse(s) : {}); // null이면 빈 객체로 설정(강의에서 null 설정 안 해줌)
@@ -49,6 +73,7 @@ export default function App() {
     await saveToDos(newToDos);
     setText("");
   };
+
   const deleteTodo = async (key) => {
     Alert.alert("Delete To Do", "Are you sure?", [
       { text: "Cancel" },
@@ -57,7 +82,7 @@ export default function App() {
         style: "destructive", // 아이폰에서만 가능한 설정
         onPress: () => {
           const newToDos = { ...toDos }; // state의 내용으로 새 객체 생성
-          delete newToDos[key]; // 이 객체는 아직 state에 없어서 mutate 해도 되지만 state는 절대 muate 불가
+          delete newToDos[key]; // 이 객체는 아직 state에 없어서 mutate 해도 되지만 state는 절대 mutate 불가
           setToDos(newToDos); // state 업데이트
           saveToDos(newToDos);
         },
@@ -110,7 +135,7 @@ export default function App() {
             <View style={styles.toDo} key={key}>
               <Text style={styles.toDoText}>{toDos[key].text}</Text>
               <TouchableOpacity onPress={() => deleteTodo(key)}>
-                <Fontisto name="trash" size={15} color={theme.grey} />
+                <Icon name="trash-outline" size={20} color="theme.grey" />
               </TouchableOpacity>
             </View>
           ) : null
