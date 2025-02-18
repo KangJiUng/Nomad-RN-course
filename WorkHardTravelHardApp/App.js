@@ -20,6 +20,8 @@ export default function App() {
   const [working, setWorking] = useState(true);
   const [text, setText] = useState("");
   const [toDos, setToDos] = useState({});
+  const [editingToDo, setEditingToDo] = useState(null); // 수정 중인 toDo의 key
+  const [editedText, setEditedText] = useState(""); // 수정할 텍스트
 
   useEffect(() => {
     loadToDos();
@@ -93,32 +95,33 @@ export default function App() {
     ]);
   };
 
-  // 체크박스를 누르면 completed 상태를 true/false로 변경하는 함수
   const completeTodo = async (key) => {
-    Alert.alert("Delete To Do", "Are you sure?", [
-      { text: "Cancel" },
-      {
-        text: "I'm sure",
-        onPress: () => {
-          const newToDos = { ...toDos };
-          newToDos[key].completed = !newToDos[key].completed; // true/false 토글
-          setToDos(newToDos);
-          saveToDos(newToDos);
-        },
-      },
-    ]);
+    const newToDos = { ...toDos };
+    newToDos[key].completed = !newToDos[key].completed; // true/false 토글
+    setToDos(newToDos);
+    saveToDos(newToDos);
+  };
+
+  const startEditing = (key) => {
+    setEditingToDo(key); // 현재 수정 중인 toDo 설정
+    setEditedText(toDos[key].text); // 기존 텍스트를 input에 적용
+  };
+
+  const finishEditing = async (key) => {
+    if (editedText.trim() === "") {
+      return;
+    }
+    const newToDos = { ...toDos };
+    newToDos[key].text = editedText;
+    setToDos(newToDos);
+    await saveToDos(newToDos);
+    setEditingToDo(null); // 수정 모드 종료
   };
 
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.header}>
-        {/*
-        - TouchableOpacity: 버튼을 클릭하면 투명도를 주는 컴포넌트(activeOpacity로 투명도 조절 가능)
-        - TouchableHighlight: TouchableOpacity보다 좀 더 다양한 속성을 설정할 수 있음(ex-<TouchableHighlight onPress={() => console.log("pressed")}>)
-        - TouchableWithoutFeedback: UI 변화없이 화면 위의 이벤트를 Listen할 때 사용
-        - Pressable: Touchable 보다도 더 다양한 설정을 가지고 미래지향적임 
-        */}
         <TouchableOpacity onPress={work}>
           <Text
             style={{ ...styles.btnText, color: working ? "white" : theme.grey }}
@@ -137,7 +140,6 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       </View>
-      {/* TextInput: keyboardType이나 returntextType, multiline 등 설정 props도 다양하게 존재 */}
       <TextInput
         onSubmitEditing={addTodo}
         onChangeText={onChangeText}
@@ -150,23 +152,39 @@ export default function App() {
         {Object.keys(toDos).map((key) =>
           toDos[key].working === working ? (
             <View style={styles.toDo} key={key}>
-              {/* completed 상태에 따라 텍스트 스타일 변경 */}
-              <Text
-                style={{
-                  ...styles.toDoText,
-                  textDecorationLine: toDos[key].completed
-                    ? "line-through"
-                    : "none",
-                  color: toDos[key].completed ? "grey" : "black",
-                }}
-              >
-                {toDos[key].text}
-              </Text>
+              {/* 수정 중이면 TextInput, 아니면 Text */}
+              {editingToDo === key ? (
+                <TextInput
+                  style={styles.toDoText}
+                  value={editedText}
+                  returnKeyType="done"
+                  onChangeText={setEditedText}
+                  onSubmitEditing={() => finishEditing(key)}
+                  autoFocus
+                />
+              ) : (
+                <Text
+                  style={{
+                    ...styles.toDoText,
+                    textDecorationLine: toDos[key].completed
+                      ? "line-through"
+                      : "none",
+                    color: toDos[key].completed ? "grey" : "black",
+                  }}
+                >
+                  {toDos[key].text}
+                </Text>
+              )}
 
               <View style={styles.iconContainer}>
                 {/* 체크박스 버튼 (완료 상태 변경) */}
                 <TouchableOpacity onPress={() => completeTodo(key)}>
                   <Icon name="checkbox-outline" size={22} color="black" />
+                </TouchableOpacity>
+
+                {/* 수정 버튼 */}
+                <TouchableOpacity onPress={() => startEditing(key)}>
+                  <Icon name="pencil-outline" size={22} color="black" />
                 </TouchableOpacity>
 
                 {/* 삭제 버튼 */}
