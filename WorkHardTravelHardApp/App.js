@@ -67,7 +67,10 @@ export default function App() {
 
     // state 수정 직접 절대 안됨. 객체 추가해주는 식으로 해줘야 할 것을 명심
     // Object.assign 써서 빈 객체+새로운 객체 해도 되지만 ES6 써도 됨(...toDos)
-    const newToDos = { ...toDos, [Date.now()]: { text, working } };
+    const newToDos = {
+      ...toDos,
+      [Date.now()]: { text, working, completed: false },
+    };
 
     setToDos(newToDos);
     await saveToDos(newToDos);
@@ -90,16 +93,32 @@ export default function App() {
     ]);
   };
 
+  // 체크박스를 누르면 completed 상태를 true/false로 변경하는 함수
+  const completeTodo = async (key) => {
+    Alert.alert("Delete To Do", "Are you sure?", [
+      { text: "Cancel" },
+      {
+        text: "I'm sure",
+        onPress: () => {
+          const newToDos = { ...toDos };
+          newToDos[key].completed = !newToDos[key].completed; // true/false 토글
+          setToDos(newToDos);
+          saveToDos(newToDos);
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <StatusBar style="auto" />
       <View style={styles.header}>
-        {
-          // TouchableOpacity: 버튼을 클릭하면 투명도를 주는 컴포넌트(activeOpacity로 투명도 조절 가능)
-          // TouchableHighlight: TouchableOpacity보다 좀 더 다양한 속성을 설정할 수 있음(ex-<TouchableHighlight onPress={() => console.log("pressed")}>)
-          // TouchableWithoutFeedback: UI 변화없이 화면 위의 이벤트를 Listen할 때 사용
-          // Pressable: Touchable 보다도 더 다양한 설정을 가지고 미래지향적임
-        }
+        {/*
+        - TouchableOpacity: 버튼을 클릭하면 투명도를 주는 컴포넌트(activeOpacity로 투명도 조절 가능)
+        - TouchableHighlight: TouchableOpacity보다 좀 더 다양한 속성을 설정할 수 있음(ex-<TouchableHighlight onPress={() => console.log("pressed")}>)
+        - TouchableWithoutFeedback: UI 변화없이 화면 위의 이벤트를 Listen할 때 사용
+        - Pressable: Touchable 보다도 더 다양한 설정을 가지고 미래지향적임 
+        */}
         <TouchableOpacity onPress={work}>
           <Text
             style={{ ...styles.btnText, color: working ? "white" : theme.grey }}
@@ -118,9 +137,7 @@ export default function App() {
           </Text>
         </TouchableOpacity>
       </View>
-      {
-        // TextInput: keyboardType이나 returntextType, multiline 등 설정 props도 다양하게 존재
-      }
+      {/* TextInput: keyboardType이나 returntextType, multiline 등 설정 props도 다양하게 존재 */}
       <TextInput
         onSubmitEditing={addTodo}
         onChangeText={onChangeText}
@@ -133,10 +150,30 @@ export default function App() {
         {Object.keys(toDos).map((key) =>
           toDos[key].working === working ? (
             <View style={styles.toDo} key={key}>
-              <Text style={styles.toDoText}>{toDos[key].text}</Text>
-              <TouchableOpacity onPress={() => deleteTodo(key)}>
-                <Icon name="trash-outline" size={20} color="theme.grey" />
-              </TouchableOpacity>
+              {/* completed 상태에 따라 텍스트 스타일 변경 */}
+              <Text
+                style={{
+                  ...styles.toDoText,
+                  textDecorationLine: toDos[key].completed
+                    ? "line-through"
+                    : "none",
+                  color: toDos[key].completed ? "grey" : "black",
+                }}
+              >
+                {toDos[key].text}
+              </Text>
+
+              <View style={styles.iconContainer}>
+                {/* 체크박스 버튼 (완료 상태 변경) */}
+                <TouchableOpacity onPress={() => completeTodo(key)}>
+                  <Icon name="checkbox-outline" size={22} color="black" />
+                </TouchableOpacity>
+
+                {/* 삭제 버튼 */}
+                <TouchableOpacity onPress={() => deleteTodo(key)}>
+                  <Icon name="trash-outline" size={22} color="black" />
+                </TouchableOpacity>
+              </View>
             </View>
           ) : null
         )}
@@ -178,5 +215,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  toDoText: { color: "White", fontSize: 16, fontWeight: "500" },
+  toDoText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  iconContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 15,
+  },
 });
