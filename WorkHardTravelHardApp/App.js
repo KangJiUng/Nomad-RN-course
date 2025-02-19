@@ -7,6 +7,7 @@ import {
   TextInput,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native";
 import { theme } from "./colors";
 import { useEffect, useState } from "react";
@@ -80,19 +81,29 @@ export default function App() {
   };
 
   const deleteTodo = async (key) => {
-    Alert.alert("Delete To Do", "Are you sure?", [
-      { text: "Cancel" },
-      {
-        text: "I'm sure",
-        style: "destructive", // 아이폰에서만 가능한 설정
-        onPress: () => {
-          const newToDos = { ...toDos }; // state의 내용으로 새 객체 생성
-          delete newToDos[key]; // 이 객체는 아직 state에 없어서 mutate 해도 되지만 state는 절대 mutate 불가
-          setToDos(newToDos); // state 업데이트
-          saveToDos(newToDos);
+    if (Platform.OS === "web") {
+      const ok = confirm("Do you want to delete this To do?");
+      if (ok) {
+        const newToDos = { ...toDos };
+        delete newToDos[key];
+        setToDos(newToDos);
+        saveToDos(newToDos);
+      }
+    } else {
+      Alert.alert("Delete To Do", "Are you sure?", [
+        { text: "Cancel" },
+        {
+          text: "I'm sure",
+          style: "destructive", // 아이폰에서만 가능한 설정
+          onPress: () => {
+            const newToDos = { ...toDos }; // state의 내용으로 새 객체 생성
+            delete newToDos[key]; // 이 객체는 아직 state에 없어서 mutate 해도 되지만 state는 절대 mutate 불가
+            setToDos(newToDos); // state 업데이트
+            saveToDos(newToDos);
+          },
         },
-      },
-    ]);
+      ]);
+    }
   };
 
   const completeTodo = async (key) => {
